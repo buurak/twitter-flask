@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block body %}
+
+{% from "includes/formhelpers.html" import render_field %}
+
+<h4>
+    <strong>
+        Giriş Yapın
+    </strong>
+</h4>
+<hr>
+
+<form method="POST">
+
+    {{ render_field(form.email, class="form-control") }}
+    {{ render_field(form.password, class="form-control") }}
+
+    <button type="submit" class="btn btn-primary">Giriş Yap</button>
+</form>
+
+{% endblock body %}

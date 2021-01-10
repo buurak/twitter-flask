@@ -1,10 +1,12 @@
-from flask import Flask, redirect, url_for, session
-from flask_dance.contrib.twitter import make_twitter_blueprint, twitter
+from flask import Flask, redirect, url_for, session, request, render_template, flash
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin, current_user, LoginManager, login_required, login_user, logout_user
-from flask_dance.consumer.storage.sqla import OAuthConsumerMixin, SQLAlchemyStorage
-from flask_dance.consumer import oauth_authorized
 from sqlalchemy.orm.exc import NoResultFound
+import tweepy
+
+from forms import LoginForm, RegisterForm
+from werkzeug.security import generate_password_hash, check_password_hash
+
 
 app = Flask(__name__)
 
@@ -16,70 +18,96 @@ CONSUMER_SECRET = app.config["CONSUMER_SECRET"]
 ACCESS_TOKEN = app.config["ACCESS_TOKEN"]
 ACCESS_TOKEN_SECRET = app.config["ACCESS_TOKEN_SECRET"]
 
-
-twitter_blueprint = make_twitter_blueprint(
-    api_key=CONSUMER_KEY,
-    api_secret=CONSUMER_SECRET,
-)
-
-app.register_blueprint(twitter_blueprint, url_prefix="/twitter_login")
-
-
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite://///home/ilteriskeskin/Belgeler/twitter-flask/src/database.db"
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////home/ilteriskeskin/Belgeler/twitter-flask/src/database.db'
 db = SQLAlchemy(app)
-
-login_manager = LoginManager(app)
-
-from models import User, OAuth
+from models import User
 
 
-@login_manager.user_loader
-def load_user(user_id):
-    return User.query.get(int(user_id))
-twitter_blueprint.backend = SQLAlchemyStorage(OAuth, db.session, user=current_user)
+consumer_key = CONSUMER_KEY
+consumer_secret = CONSUMER_SECRET
+callback = 'http://127.0.0.1:5000/callback'
+
+@app.route('/auth')
+def auth():
+    auth = tweepy.OAuthHandler(consumer_key, consumer_secret, callback)
+    url = auth.get_authorization_url()
+    session['request_token'] = auth.request_token
+    return redirect(url)
 
 
-@app.route("/")
-@login_required
-def home():
-    return f"Hello, {current_user.username}"
+@app.route('/callback')
+def twitter_callback():
+    request_token = session['request_token']
+    del session['request_token']
 
-@app.route("/logout/")
-@login_required
-def logout():
-    session.clear()
-    logout_user()
+    auth = tweepy.OAuthHandler(consumer_key, consumer_secret, callback)
+    auth.request_token = request_token
+    verifier = request.args.get('oauth_verifier')
+    auth.get_access_token(verifier)
+    session['token'] = (auth.access_token, auth.access_token_secret)
+
     return redirect(url_for('home'))
 
 
-@app.route("/twitter")
-def twitter_login():
-    if not twitter.authorized:
-        return redirect(url_for('twitter.login'))
+# @app.route('/app')
+# def request_twitter():
+#     token, token_secret = session['token']
+#     auth = tweepy.OAuthHandler(consumer_key, consumer_secret, callback)
+#     auth.set_access_token(token, token_secret)
+#     api = tweepy.API(auth)
 
-    account_info = twitter.get('account/settings.json')
-    account_info_json = account_info.json()
+#     return render_template("index.html")
 
-    return f"<h1>Your twitter username: @{account_info_json['screen_name']}</h1>"
-    
 
-@oauth_authorized.connect_via(twitter_blueprint)
-def twitter_logged_in(blueprint, token):
-    account_info = blueprint.session.get('account/settings.json')
+@app.route('/')
+def home():
+    if session['token']:
+        token, token_secret = session['token']
+        auth = tweepy.OAuthHandler(consumer_key, consumer_secret, callback)
+        auth.set_access_token(token, token_secret)
+        api = tweepy.API(auth)
 
-    if account_info.ok:
-        account_info_json = account_info.json()
-        username = account_info_json['screen_name']
+        followers = api.me()
 
-        query = User.query.filter_by(username=username)
+        return render_template("index.html", followers=followers)
+    else:
+        return render_template("index.html")
 
-        try:
-            user = query.one()
-            print("AAAAAAAAAAAAA: ", user)
-        except NoResultFound:
-            user = User(username=username)
-            print("BBBBBBBBBBBB: ", user)
-            db.session.add(user)
-            db.session.commit()
-        
-        login_user(user)
+
+@app.route('/login/', methods = ['GET', 'POST'])
+def login():
+    form = LoginForm(request.form)
+    if request.method == 'POST' and form.validate:
+        user = User.query.filter_by(email = form.email.data).first()
+        if user:
+            if check_password_hash(user.password, form.password.data):
+                flash("Başarıyla Giriş Yaptınız", "success")
+                
+                session['logged_in'] = True
+                session['email'] = user.email 
+
+                return redirect(url_for('home'))
+            else:
+                flash("Kullanıcı Adı veya Parola Yanlış", "danger")
+                return redirect(url_for('login'))
+
+    return render_template('auth/login.html', form = form)
+
+
+@app.route('/register/', methods = ['GET', 'POST'])
+def register():
+    form = RegisterForm(request.form)
+    if request.method == 'POST' and form.validate():
+        hashed_password = generate_password_hash(form.password.data, method='sha256')
+        new_user = User(name = form.name.data, username = form.username.data, email = form.email.data, password = hashed_password)
+        db.session.add(new_user)
+        db.session.commit()
+        flash('Başarılı bir şekilde kayıt oldunuz', 'success')
+        return redirect(url_for('login'))
+    else:
+        return render_template('auth/register.html', form = form)
+
+@app.route('/logout/')
+def logout():
+    session.clear()
+    return redirect(url_for('login'))

@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block body %}
+
+
+<h4>
+    <a href="/register">Kayıt ol</a>
+</h4>
+<h4>
+    <a href="/login">Giriş</a>
+</h4>
+<h4>
+    <a href="/auth">Twitter Connect mk</a>
+</h4>
+
+{% if session['token'] %}
+<h5>
+    Hoşgeldin {{ session['email'] }} Token bilgilerin {{ session['token'] }}
+</h5>
+{% endif %}
+
+
+{% if followers %}
+{{ followers }}
+{% endif %}
+
+{% endblock body %}
