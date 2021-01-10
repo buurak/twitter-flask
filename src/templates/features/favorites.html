@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block body %}
+
+
+<h1>{{ times }}</h1>
+<hr>
+<p>Fav sayın: {{ me.favourites_count }}</p>
+
+<p>Tweet sayın: {{ me.statuses_count }}</p>
+<br>
+
+<ul>      
+    {% for fav in favs %}
+        <li>
+                {{ fav }}
+        </li>
+    {% endfor %}      
+</ul>
+
+
+
+{% endblock body %}

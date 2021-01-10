@@ -17,11 +17,14 @@
 <h5>
     Hoşgeldin {{ session['email'] }} Token bilgilerin {{ session['token'] }}
 </h5>
+
+<p>Seni takip etmeyenleri görmek için <a href="/unfollowers">tıkla!</a></p>
+<p>Favorilerini görmek için <a href="/favorites">tıkla!</a></p>
+
+<a href="/logout/">Çıkış yap!</a>
+
 {% endif %}
 
 
-{% if followers %}
-{{ followers }}
-{% endif %}
 
 {% endblock body %}

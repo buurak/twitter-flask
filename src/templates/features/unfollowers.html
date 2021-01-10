@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block body %}
+
+    {% if unfollowers_list %}
+
+    {{ times }}
+    <ul>      
+        {% for unfollower in unfollowers_list %}
+            <li>
+                <a href="https://twitter.com/{{ unfollower }}" target="_blank" style="text-decoration: none;">{{ unfollower }}</a>
+            </li>
+        {% endfor %}      
+    </ul>
+
+    {% endif %}
+
+{% endblock body %}
+
