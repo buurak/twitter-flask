@@ -13,16 +13,67 @@
 
 <body>
 
+    <nav class="navbar navbar-expand-md navbar-dark bg-dark">
+        <div class="navbar-collapse collapse w-100 order-1 order-md-0 dual-collapse2">
+            <ul class="navbar-nav mr-auto">
+                <li class="nav-item active">
+                    <a class="nav-link" href="/">TwitterSaaS</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/">Home</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/about">About</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/privacy_policy">Privacy and Policy</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/pricing">Pricing</a>
+                </li>
+            </ul>
+        </div>
+        <div class="navbar-collapse collapse w-100 order-3 dual-collapse2">
+            <ul class="navbar-nav ml-auto">
+                <!-- <li class="nav-item">
+                    <a class="nav-link" href="#">Right</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">Link</a>
+                </li> -->
+                {% if session['token'] %}
+                <li class="nav-item">
+                    <a class="nav-link" href="/logout">Logout</a>
+                </li>
+                {% else %}
+                <li class="nav-item">
+                    <a class="btn btn-primary" href="/auth">Login with Twitter</a>
+                </li>
+                {% endif %}
+            </ul>
+        </div>
+    </nav>
+    <br>
     <div class="container">
-
-    <a href="/">Anasayfa</a>
-    <hr><br>
 
         {% block body %}
 
         {% endblock body %}
 
     </div>
+
+    <script>
+
+        var source = new EventSource("/progress");
+        source.onmessage = function (event) {
+            $('.progress-bar').css('width', event.data + '%').attr('aria-valuenow', event.data);
+            $('.progress-bar-label').text(event.data + '%');
+    
+            if (event.data == 100) {
+                source.close()
+            }
+        }
+    </script>
 
     <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
         integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"

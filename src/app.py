@@ -1,8 +1,9 @@
-from flask import Flask, redirect, url_for, session, request, render_template, flash
+from flask import Flask, redirect, url_for, session, request, render_template, flash, Response
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin, current_user, LoginManager, login_required, login_user, logout_user
 from sqlalchemy.orm.exc import NoResultFound
-import tweepy, time
+import tweepy
+import time
 
 from forms import LoginForm, RegisterForm
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -18,7 +19,7 @@ CONSUMER_SECRET = app.config["CONSUMER_SECRET"]
 ACCESS_TOKEN = app.config["ACCESS_TOKEN"]
 ACCESS_TOKEN_SECRET = app.config["ACCESS_TOKEN_SECRET"]
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////home/brk/Desktop/twitter-flask/src/database.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////home/ilteriskeskin/Belgeler/twitter-flask/src/database.db'
 db = SQLAlchemy(app)
 from models import User
 
@@ -26,6 +27,7 @@ from models import User
 consumer_key = CONSUMER_KEY
 consumer_secret = CONSUMER_SECRET
 callback = 'http://127.0.0.1:5000/callback'
+
 
 def diff(li1, li2):
     return (list(list(set(li1)-set(li2)) + list(set(li2)-set(li1))))
@@ -60,13 +62,15 @@ def home():
         auth = tweepy.OAuthHandler(consumer_key, consumer_secret, callback)
         auth.set_access_token(token, token_secret)
         api = tweepy.API(auth)
-        return render_template("index.html")
+        username = api.me().screen_name
+        return render_template("index.html", username=username)
     else:
         return render_template("index.html")
 
 
 @app.route('/unfollowers', methods = ['GET','POST'])
 def unfollowers():
+    session['progress'] = True
     if 'token' in session:
         starttime = time.time()
         token, token_secret = session['token']
@@ -193,3 +197,30 @@ def logout():
     return redirect(url_for('home'))
 
 
+@app.route('/progress')
+def progress():
+	def generate():
+		x = 0
+		
+		while x <= 99:
+			yield "data:" + str(x) + "\n\n"
+			x = x + 10
+			time.sleep(2)
+
+	return Response(generate(), mimetype= 'text/event-stream')
+
+
+@app.route('/about/')
+def about():
+    return "about"
+
+
+@app.route('/privacy_policy/')
+def privacy_policy():
+    return "privacy_policy"
+
+
+
+@app.route('/pricing/')
+def pricing():
+    return "pricing"
