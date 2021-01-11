@@ -112,14 +112,45 @@ def favorites():
         token, token_secret = session['token']
         auth = tweepy.OAuthHandler(consumer_key, consumer_secret, callback)
         auth.set_access_token(token, token_secret)
-        api = tweepy.API(auth)
-        favs = api.favorites(count=250)
-        favs_list = []
+        api = tweepy.API(auth, wait_on_rate_limit=True)
+        favs_ids = []
+        favs_texts = []
         me = api.me()
-        for i in favs:
-            favs_list.append(i._json['text'])
+        for favorite in tweepy.Cursor(api.favorites).items():
+            api.destroy_favorite(favorite.id)
         times = time.time()-starttime
-        return render_template('features/favorites.html', favs=favs_list, times=times, me=me)
+        return render_template('features/favorites.html', favs_ids=favs_ids, favs_texts=favs_texts, times=times, me=me)
+
+
+@app.route('/delete_tweets', methods = ['GET','POST'])
+def delete_tweets():
+    if 'token' in session:
+        starttime = time.time()
+        token, token_secret = session['token']
+        auth = tweepy.OAuthHandler(consumer_key, consumer_secret, callback)
+        auth.set_access_token(token, token_secret)
+        api = tweepy.API(auth)
+        timeline = api.user_timeline()
+        tweets =[]
+        for tweet in tweepy.Cursor(api.user_timeline).items():
+            tweets.append(tweet)
+        times = time.time()-starttime
+        return render_template('features/delete_tweets.html', tweets=tweets)
+
+
+@app.route('/test', methods = ['GET','POST'])
+def test():
+    if 'token' in session:
+        starttime = time.time()
+        token, token_secret = session['token']
+        auth = tweepy.OAuthHandler(consumer_key, consumer_secret, callback)
+        auth.set_access_token(token, token_secret)
+        api = tweepy.API(auth)
+        favs_text = []
+        for favorite in tweepy.Cursor(api.favorites, wait_on_rate_limit=True, wait_on_rate_limit_notify=True).items(limit=0):
+            favs_text.append(favorite._json)
+        times = time.time()-starttime
+        return render_template('features/test.html',times=times, favs_text=favs_text)
 
 
 

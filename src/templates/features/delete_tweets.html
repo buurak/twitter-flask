@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block body %}
+
+<ol>      
+    {% for tweet in tweets %}
+        <li>
+                {{ tweet.text }}
+        </li>
+    {% endfor %}      
+</ol>
+{% endblock body %}

@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block body %}
+<p>{{ times }} sn</p>
+    <ol>
+        {% for fav in favs_text %}
+            <li>
+                {{ tweet.text }}
+            </li>
+        {% endfor %}
+    </ol>
+
+{% endblock body %}
