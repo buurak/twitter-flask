@@ -4,6 +4,8 @@ from flask_login import UserMixin, current_user, LoginManager, login_required, l
 from sqlalchemy.orm.exc import NoResultFound
 import tweepy
 import time
+import random
+from functools import wraps
 
 from forms import LoginForm, RegisterForm
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -19,7 +21,7 @@ CONSUMER_SECRET = app.config["CONSUMER_SECRET"]
 ACCESS_TOKEN = app.config["ACCESS_TOKEN"]
 ACCESS_TOKEN_SECRET = app.config["ACCESS_TOKEN_SECRET"]
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////home/ilteriskeskin/Belgeler/twitter-flask/src/database.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////home/brk/Desktop/twitter-flask/src/database.db'
 db = SQLAlchemy(app)
 from models import User
 
@@ -31,6 +33,18 @@ callback = 'http://127.0.0.1:5000/callback'
 
 def diff(li1, li2):
     return (list(list(set(li1)-set(li2)) + list(set(li2)-set(li1))))
+
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'logged_in' in session:
+            return f(*args, **kwargs)
+        else:
+            flash('Bu sayfayı görüntülemek için lütfen giriş yapın.', 'danger')
+            return redirect(url_for('login'))
+
+    return decorated_function
 
 @app.route('/auth')
 def auth():
@@ -151,7 +165,7 @@ def test():
         auth.set_access_token(token, token_secret)
         api = tweepy.API(auth)
         favs_text = []
-        for favorite in tweepy.Cursor(api.favorites, wait_on_rate_limit=True, wait_on_rate_limit_notify=True).items(limit=0):
+        for favorite in tweepy.Cursor(api.favorites, wait_on_rate_limit=True, wait_on_rate_limit_notify=True).items(limit=50):
             favs_text.append(favorite._json)
         times = time.time()-starttime
         return render_template('features/test.html',times=times, favs_text=favs_text)
@@ -191,7 +205,7 @@ def register():
     else:
         return render_template('auth/register.html', form = form)
 
-@app.route('/logout/')
+@app.route('/logout')
 def logout():
     session.clear()
     return redirect(url_for('home'))
@@ -204,9 +218,8 @@ def progress():
 		
 		while x <= 99:
 			yield "data:" + str(x) + "\n\n"
-			x = x + 10
-			time.sleep(2)
-
+			x = x + random.randint(1,20)
+			time.sleep(random.randint(1, 3))
 	return Response(generate(), mimetype= 'text/event-stream')
 
 
