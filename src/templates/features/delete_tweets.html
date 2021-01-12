@@ -2,11 +2,10 @@
 
 {% block body %}
 
-<ol>      
-    {% for tweet in tweets %}
-        <li>
-                {{ tweet.text }}
-        </li>
-    {% endfor %}      
-</ol>
+<p>Tweet sayın: {{ me.statuses_count }}</p>
+
+<form method="POST">
+    <button type="submit" class="btn btn-danger">Delete all tweets!</button>
+</form>
+
 {% endblock body %}

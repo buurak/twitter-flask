@@ -1,13 +1,28 @@
 {% extends "base.html" %}
 
 {% block body %}
-<p>{{ times }} sn</p>
-    <ol>
-        {% for fav in favs_text %}
-            <li>
-                {{ fav.text }}
-            </li>
-        {% endfor %}
-    </ol>
+
+
+<form method="POST">
+
+<button type="submit">Test</button>
+
+    {% if favs_text %}
+
+        <p>{{ times }} sn</p>
+        <ol>
+            {% for fav in favs_text %}
+                <li>
+                    {{ fav.text }}
+                </li>
+            {% endfor %}
+        </ol>
+
+    {% endif %}
+
+</form>
+
+
+
 
 {% endblock body %}

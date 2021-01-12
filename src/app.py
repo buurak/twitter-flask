@@ -42,7 +42,7 @@ def login_required(f):
             return f(*args, **kwargs)
         else:
             flash('Bu sayfayı görüntülemek için lütfen giriş yapın.', 'danger')
-            return redirect(url_for('login'))
+            return redirect(url_for('auth'))
 
     return decorated_function
 
@@ -84,7 +84,7 @@ def home():
 
 @app.route('/unfollowers', methods = ['GET','POST'])
 def unfollowers():
-    session['progress'] = True
+    # session['progress'] = True
     if 'token' in session:
         starttime = time.time()
         token, token_secret = session['token']
@@ -124,21 +124,24 @@ def unfollowers():
 
 
 @app.route('/favorites', methods = ['GET','POST'])
-def favorites():
+def favorites():   
     if 'token' in session:
         starttime = time.time()
         token, token_secret = session['token']
         auth = tweepy.OAuthHandler(consumer_key, consumer_secret, callback)
         auth.set_access_token(token, token_secret)
         api = tweepy.API(auth, wait_on_rate_limit=True)
-        favs_ids = []
-        favs_texts = []
         me = api.me()
-        for favorite in tweepy.Cursor(api.favorites).items():
-            api.destroy_favorite(favorite.id)
-        times = time.time()-starttime
-        return render_template('features/favorites.html', favs_ids=favs_ids, favs_texts=favs_texts, times=times, me=me)
-
+        if request.method == "POST":
+            favs_ids = []
+            for favorite in tweepy.Cursor(api.favorites).items():
+                api.destroy_favorite(favorite.id)
+            times = time.time()-starttime
+            return render_template('features/favorites.html', favs_ids=favs_ids, times=times, me=me)
+        else:
+            return render_template('features/favorites.html', me=me)
+    else:
+        return render_template('features/favorites.html')
 
 @app.route('/delete_tweets', methods = ['GET','POST'])
 def delete_tweets():
@@ -148,28 +151,35 @@ def delete_tweets():
         auth = tweepy.OAuthHandler(consumer_key, consumer_secret, callback)
         auth.set_access_token(token, token_secret)
         api = tweepy.API(auth)
-        timeline = api.user_timeline()
-        tweets =[]
-        for tweet in tweepy.Cursor(api.user_timeline).items():
-            tweets.append(tweet)
-        times = time.time()-starttime
-        return render_template('features/delete_tweets.html', tweets=tweets)
-
+        me = api.me()
+        if request.method == "POST":
+            timeline = api.user_timeline()
+            tweets =[]
+            for tweet in tweepy.Cursor(api.user_timeline).items():
+                tweets.append(tweet)
+            times = time.time()-starttime
+            return render_template('features/delete_tweets.html', tweets=tweets, me=me)
+        else:
+            return render_template('features/delete_tweets.html', me=me)
+    else:
+        return render_template('features/delete_tweets.html',me=me)
 
 @app.route('/test', methods = ['GET','POST'])
 def test():
-    if 'token' in session:
-        starttime = time.time()
-        token, token_secret = session['token']
-        auth = tweepy.OAuthHandler(consumer_key, consumer_secret, callback)
-        auth.set_access_token(token, token_secret)
-        api = tweepy.API(auth)
-        favs_text = []
-        for favorite in tweepy.Cursor(api.favorites, wait_on_rate_limit=True, wait_on_rate_limit_notify=True).items(limit=50):
-            favs_text.append(favorite._json)
-        times = time.time()-starttime
-        return render_template('features/test.html',times=times, favs_text=favs_text)
-
+    if request.method == "POST":
+        if 'token' in session:
+            starttime = time.time()
+            token, token_secret = session['token']
+            auth = tweepy.OAuthHandler(consumer_key, consumer_secret, callback)
+            auth.set_access_token(token, token_secret)
+            api = tweepy.API(auth)
+            favs_text = []
+            for favorite in tweepy.Cursor(api.favorites, wait_on_rate_limit=True, wait_on_rate_limit_notify=True).items(limit=50):
+                favs_text.append(favorite._json)
+            times = time.time()-starttime
+            return render_template('features/test.html',times=times, favs_text=favs_text)
+    else:
+        return render_template('features/test.html')
 
 
 @app.route('/login/', methods = ['GET', 'POST'])
@@ -205,7 +215,7 @@ def register():
     else:
         return render_template('auth/register.html', form = form)
 
-@app.route('/logout')
+@app.route('/logout/')
 def logout():
     session.clear()
     return redirect(url_for('home'))
